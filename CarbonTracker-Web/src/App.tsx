@@ -33,6 +33,7 @@ import {
   requestPasswordReset,
   resendVerificationEmail,
   signInWithEmail,
+  signOutFromFirebase,
   type PendingSignIn,
   type WebUser,
 } from './auth'
@@ -172,10 +173,17 @@ function App() {
     if (!pendingSignIn) return
     setAuthBusy(true)
     try {
-      await resendVerificationEmail(pendingSignIn.idToken)
+      const alreadyVerified = await resendVerificationEmail(pendingSignIn)
+      if (alreadyVerified) {
+        setAuthMessage('Your email is already verified. Signing you in…')
+        await finishSignIn(pendingSignIn)
+        return
+      }
       setAuthMessage('Verification email sent. Check your inbox and spam folder.')
+      setAuthMessageSuccess(true)
     } catch (error) {
       setAuthMessage(messageFor(error))
+      setAuthMessageSuccess(false)
     } finally {
       setAuthBusy(false)
     }
@@ -205,20 +213,31 @@ function App() {
       const pending = await createEmailAccount(name, email, password)
       setPendingSignIn(pending)
       setAuthMode('login')
-      setAuthMessage('Account created. We sent a verification link to your email. Verify it, then choose “I verified my email”.')
+      if (pending.verificationError) {
+        setAuthMessage(`Account created, but Firebase could not send the verification email: ${pending.verificationError}. Check Firebase email delivery settings, then choose “Resend verification email”.`)
+      } else {
+        setAuthMessage('Account created. We sent a verification link to your email. Verify it, then choose “I verified my email”.')
+        setAuthMessageSuccess(true)
+      }
     } catch (error) {
       setAuthMessage(messageFor(error))
+      setAuthMessageSuccess(false)
     } finally {
       setAuthBusy(false)
     }
   }
 
-  const signOut = () => {
-    sessionStorage.removeItem('carbon-web-session')
-    setSession(null)
-    setHome(null)
-    setTrips([])
-    setWallet(null)
+  const signOut = async () => {
+    try {
+      await signOutFromFirebase()
+      sessionStorage.removeItem('carbon-web-session')
+      setSession(null)
+      setHome(null)
+      setTrips([])
+      setWallet(null)
+    } catch (error) {
+      setPageError(messageFor(error))
+    }
   }
 
   const redeemVoucher = async (voucher: Voucher) => {

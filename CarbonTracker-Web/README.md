@@ -34,6 +34,8 @@ npm run dev
 
 Open the local URL printed by Vite. Sign in with the same verified Firebase email used in the mobile app. Home, trip history, credits, wallet, rewards, and account information are loaded from the shared backend. Trips logged from the web are written to the same API as mobile trips.
 
+Email/password registration, sign-in, profile-name updates, email verification, and password reset use the Firebase JavaScript Auth SDK configured for the same Firebase project as `CarbonTracker-Flutter`. Newly registered accounts must verify their email before the backend creates or connects the Carbon Tracker user.
+
 ## Production deployment
 
 Set `VITE_API_BASE_URL` to the public HTTPS API URL and `VITE_FIREBASE_API_KEY` before building:

@@ -1,6 +1,17 @@
+import {
+  createUserWithEmailAndPassword,
+  getIdToken,
+  reload,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from 'firebase/auth'
+import { firebaseAuth } from './firebase'
+
 const firebaseApiKey = import.meta.env.VITE_FIREBASE_API_KEY ?? ''
 const identityToolkitUrl = 'https://identitytoolkit.googleapis.com/v1'
-const secureTokenUrl = 'https://securetoken.googleapis.com/v1'
 
 export type WebUser = {
   id: number
@@ -11,16 +22,9 @@ export type WebUser = {
 
 export type PendingSignIn = {
   idToken: string
-  refreshToken: string
   email: string
   emailVerified: boolean
-}
-
-type FirebaseTokenResponse = {
-  idToken: string
-  refreshToken: string
-  localId: string
-  email: string
+  verificationError?: string
 }
 
 type FirebaseErrorResponse = {
@@ -45,53 +49,69 @@ async function firebasePost<T>(path: string, body: Record<string, unknown>): Pro
   return result
 }
 
+function firebaseErrorCode(error: unknown) {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    return String(error.code)
+  }
+  return undefined
+}
+
 function firebaseErrorMessage(code?: string) {
   switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
     case 'EMAIL_NOT_FOUND':
     case 'INVALID_LOGIN_CREDENTIALS':
     case 'INVALID_PASSWORD':
       return 'Firebase could not sign in with those details. Check the exact email used in the mobile app or use “Forgot password?”. If this account was created before Firebase sign-in was added, create a Firebase account with the same email to link it to your app data.'
+    case 'auth/email-already-in-use':
     case 'EMAIL_EXISTS':
       return 'An account already exists for this email. Sign in instead.'
+    case 'auth/invalid-email':
     case 'INVALID_EMAIL':
       return 'Please enter a valid email address.'
+    case 'auth/weak-password':
     case 'WEAK_PASSWORD':
       return 'Choose a stronger password (at least 6 characters).'
+    case 'auth/too-many-requests':
     case 'TOO_MANY_ATTEMPTS_TRY_LATER':
       return 'Firebase temporarily blocked sign-in after too many attempts. Wait before trying again.'
+    case 'auth/operation-not-allowed':
     case 'OPERATION_NOT_ALLOWED':
       return 'Email and password sign-in is disabled in Firebase Authentication settings.'
+    case 'auth/invalid-api-key':
     case 'API_KEY_INVALID':
     case 'INVALID_API_KEY':
       return 'Firebase API key is invalid. Check VITE_FIREBASE_API_KEY.'
     case 'RESET_PASSWORD_EXCEED_LIMIT':
-      return 'Firebase temporarily limited requests. Wait before trying again.'
+    case 'auth/quota-exceeded':
+      return 'Firebase Authentication has reached a request limit. Try again later or check the Firebase project limits.'
+    case 'auth/user-disabled':
     case 'USER_DISABLED':
       return 'This account has been disabled. Contact the app administrator.'
+    case 'auth/network-request-failed':
+      return 'Could not connect to Firebase. Check your internet connection and try again.'
+    case 'auth/invalid-user-token':
+    case 'auth/user-token-expired':
+    case 'INVALID_ID_TOKEN':
+      return 'Your Firebase sign-in session expired. Sign in again, then retry.'
     default:
-      return code?.replaceAll('_', ' ') ?? 'Firebase authentication failed.'
+      return code?.replace(/^auth\//, '').replaceAll('_', ' ') ?? 'Firebase authentication failed.'
   }
 }
 
-async function lookupEmailVerified(idToken: string) {
-  const response = await firebasePost<{ users?: { emailVerified?: boolean }[] }>(
-    'accounts:lookup',
-    { idToken },
-  )
-  return response.users?.[0]?.emailVerified === true
-}
-
 export async function signInWithEmail(email: string, password: string): Promise<PendingSignIn> {
-  const result = await firebasePost<FirebaseTokenResponse>('accounts:signInWithPassword', {
-    email,
-    password,
-    returnSecureToken: true,
-  })
-  return {
-    idToken: result.idToken,
-    refreshToken: result.refreshToken,
-    email: result.email,
-    emailVerified: await lookupEmailVerified(result.idToken),
+  try {
+    const credential = await signInWithEmailAndPassword(firebaseAuth, email, password)
+    await reload(credential.user)
+    return {
+      idToken: await getIdToken(credential.user, true),
+      email: credential.user.email ?? email,
+      emailVerified: credential.user.emailVerified,
+    }
+  } catch (error) {
+    throw new Error(firebaseErrorMessage(firebaseErrorCode(error)))
   }
 }
 
@@ -100,86 +120,77 @@ export async function createEmailAccount(
   email: string,
   password: string,
 ): Promise<PendingSignIn> {
-  const result = await firebasePost<FirebaseTokenResponse>('accounts:signUp', {
-    email,
-    password,
-    returnSecureToken: true,
-  })
+  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
+    .catch((error: unknown) => {
+      throw new Error(firebaseErrorMessage(firebaseErrorCode(error)))
+    })
+  const user = credential.user
 
-  const token = await firebasePost<FirebaseTokenResponse>('accounts:update', {
-    idToken: result.idToken,
-    displayName: name,
-    returnSecureToken: true,
-  })
-  await resendVerificationEmail(token.idToken)
-  return {
-    idToken: token.idToken,
-    refreshToken: token.refreshToken,
-    email: token.email,
-    emailVerified: false,
+  try {
+    await updateProfile(user, { displayName: name })
+  } catch (error) {
+    await signOut(firebaseAuth)
+    throw new Error(`The Firebase account was created, but its profile could not be completed: ${firebaseErrorMessage(firebaseErrorCode(error))}. Sign in with this email and password to continue.`)
   }
+
+  const idToken = await getIdToken(user, true)
+  try {
+    await sendEmailVerification(user)
+  } catch (error) {
+    return {
+      idToken,
+      email: user.email ?? email,
+      emailVerified: false,
+      verificationError: firebaseErrorMessage(firebaseErrorCode(error)),
+    }
+  }
+
+  await signOut(firebaseAuth)
+  return { idToken, email: user.email ?? email, emailVerified: false }
 }
 
-export async function resendVerificationEmail(idToken: string) {
+export async function resendVerificationEmail(pending: PendingSignIn): Promise<boolean> {
+  const currentUser = firebaseAuth.currentUser
+  if (currentUser?.email?.toLowerCase() === pending.email.toLowerCase()) {
+    await reload(currentUser)
+    if (currentUser.emailVerified) return true
+    await sendEmailVerification(currentUser)
+    return false
+  }
+
   await firebasePost<{ email: string }>('accounts:sendOobCode', {
     requestType: 'VERIFY_EMAIL',
-    idToken,
+    idToken: pending.idToken,
   })
+  return false
 }
 
 export async function requestPasswordReset(email: string) {
-  await firebasePost<{ email: string }>('accounts:sendOobCode', {
-    requestType: 'PASSWORD_RESET',
-    email,
-  })
-}
-
-async function refreshPendingSignIn(pending: PendingSignIn): Promise<PendingSignIn> {
-  const response = await fetch(
-    `${secureTokenUrl}/token?key=${encodeURIComponent(firebaseApiKey)}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: pending.refreshToken,
-      }),
-    },
-  )
-  const result = (await response.json()) as {
-    id_token?: string
-    refresh_token?: string
-    error?: { message?: string }
-  }
-  if (!response.ok || !result.id_token || !result.refresh_token) {
-    throw new Error(firebaseErrorMessage(result.error?.message))
-  }
-  return {
-    ...pending,
-    idToken: result.id_token,
-    refreshToken: result.refresh_token,
+  try {
+    await sendPasswordResetEmail(firebaseAuth, email)
+  } catch (error) {
+    throw new Error(firebaseErrorMessage(firebaseErrorCode(error)))
   }
 }
 
 export async function completeEmailSignIn(pending: PendingSignIn) {
-  let current = pending
-  let verified: boolean
-  try {
-    verified = await lookupEmailVerified(current.idToken)
-  } catch {
-    current = await refreshPendingSignIn(current)
-    verified = await lookupEmailVerified(current.idToken)
+  const currentUser = firebaseAuth.currentUser
+  if (!currentUser || currentUser.email?.toLowerCase() !== pending.email.toLowerCase()) {
+    throw new Error('Your Firebase sign-in session expired. Enter your email and password again.')
   }
-  if (!verified) {
+
+  await reload(currentUser)
+  if (!currentUser.emailVerified) {
     throw new Error('Firebase still reports this email as unverified. Open the latest verification link, then try again.')
   }
+  const idToken = await getIdToken(currentUser, true)
 
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000')
     .replace(/\/+$/, '')
   const response = await fetch(`${apiBaseUrl}/auth/firebase`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id_token: current.idToken }),
+    body: JSON.stringify({ id_token: idToken }),
   })
   const data = (await response.json()) as {
     access_token?: string
@@ -193,4 +204,8 @@ export async function completeEmailSignIn(pending: PendingSignIn) {
     throw new Error(`Only user accounts can access this app (current role: ${data.user.role}).`)
   }
   return { access_token: data.access_token, user: data.user }
+}
+
+export function signOutFromFirebase() {
+  return signOut(firebaseAuth)
 }
