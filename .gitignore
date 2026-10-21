@@ -1,0 +1,37 @@
+# Local configuration and credentials
+**/.env
+**/.env.*
+!**/.env.example
+**/firebase-adminsdk*.json
+**/*.pem
+**/*.key
+
+# Python environments and generated files
+**/.venv/
+**/.venv-*/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+
+# Flutter/Dart generated files
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/build/
+**/coverage/
+
+# Node generated files
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/npm-debug.log*
+
+# Local IDE and operating-system files
+/.vscode/
+/.github/modernize/
+**/.idea/
+**/.DS_Store
+**/Thumbs.db

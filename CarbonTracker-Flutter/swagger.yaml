@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+  title: Carbon Tracker API
+  version: 1.0.0
+  description: API mô phỏng cho ứng dụng Carbon Tracker
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/emissions:
+    get:
+      summary: Lấy danh sách lượng khí thải
+      responses:
+        '200':
+          description: Danh sách lượng khí thải
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                    category:
+                      type: string
+                    value:
+                      type: number
+    post:
+      summary: Thêm bản ghi khí thải mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                category:
+                  type: string
+                value:
+                  type: number
+      responses:
+        '201':
+          description: Thêm thành công
+  /api/users/{id}:
+    get:
+      summary: Lấy thông tin người dùng
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thông tin người dùng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  email:
+                    type: string

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "222326956435",
+    "project_id": "carbon-tracker-622b1",
+    "storage_bucket": "carbon-tracker-622b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:222326956435:android:a1391022f214f87949c866",
+        "android_client_info": {
+          "package_name": "com.example.hoc_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaLQscSjQfFhBviohOK63Q_8Wbe4etc7Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

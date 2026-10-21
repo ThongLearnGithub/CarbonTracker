@@ -1,0 +1,30 @@
+{
+  "name": "carbontracker",
+  "version": "1.0.0",
+  "description": "A new Flutter project.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anhkhoamai02/CarbonTracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/anhkhoamai02/CarbonTracker/issues"
+  },
+  "homepage": "https://github.com/anhkhoamai02/CarbonTracker#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
+  }
+}
