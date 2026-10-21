@@ -27,9 +27,9 @@ pip install -r requirements.txt
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-## Start the React web app
+## Run the standalone React web app
 
-In a second terminal:
+Run this app from `CarbonTracker-Web`; it is separate from the Flutter app:
 
 ```powershell
 cd CarbonTracker-Web
@@ -43,17 +43,24 @@ npm install
 npm run dev
 ```
 
-Vite prints the local URL, normally `http://localhost:5173`.
+Vite prints the local URL, normally `http://localhost:5173`. This opens the React web interface.
 
-## Start the Flutter app
+## Run the Flutter mobile app
+
+Run this app from `CarbonTracker-Flutter`, and choose an Android device or emulator:
 
 ```powershell
 cd CarbonTracker-Flutter
 flutter pub get
-flutter run
+flutter devices
+flutter run -d <android-device-id>
 ```
 
-For emulator or device use, configure the API URL appropriate to that device. A phone cannot reach a computer's `127.0.0.1`; use the computer's LAN IP when connecting over Wi-Fi.
+If no Android device appears, start an emulator in Android Studio's Device Manager or connect an Android phone with USB debugging enabled, then run `flutter devices` again. Do not select Edge or Chrome if you want the native mobile app.
+
+Running `flutter run -d edge` (or `-d chrome`) launches the Flutter app in a browser; it is not the standalone React app. To run the React web app, use the `CarbonTracker-Web` steps above.
+
+For a phone connected over Wi-Fi, configure the API URL to use the computer's LAN IP. A phone cannot reach the computer through `127.0.0.1`.
 
 ## Security before deployment
 

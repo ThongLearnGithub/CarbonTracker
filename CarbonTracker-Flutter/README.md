@@ -1,42 +1,39 @@
-# Carbon Tracker
+# Carbon Tracker Flutter App
 
-Flutter application for tracking trips, carbon savings, credits, wallet activity, and vouchers. The same app runs on Android/iOS and in a desktop or mobile browser.
+Flutter mobile app for tracking trips, carbon savings, credits, wallet activity, and vouchers. The separate React website is in `CarbonTracker-Web`.
 
-## Run the web app locally
+## Run on Android
 
-From the `Carbon Tracker Project` directory, start the FastAPI backend in one terminal:
-
-```powershell
-cd carbon_backend
-.\.venv\Scripts\Activate.ps1
-uvicorn main:app --reload --host 0.0.0.0
-```
-
-In another terminal, from the same `Carbon Tracker Project` directory, run the Flutter app in Chrome:
+From the repository root:
 
 ```powershell
-cd "CarbonTracker - Flutter"
+cd CarbonTracker-Flutter
 flutter pub get
-flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000
+flutter devices
+flutter run -d <android-device-id>
 ```
 
-The web app authenticates with the configured Firebase project and loads trip, wallet, voucher, and homepage data from the same FastAPI API/database as the mobile app. Signing into the same account therefore shows the same server-side data.
+Start an Android emulator in Android Studio's Device Manager or connect a phone with USB debugging enabled if no Android device is listed. Do not select a browser device when you want the native mobile app.
 
-For an Android emulator, the app's default API URL is `http://10.0.2.2:8000`. For a physical phone on the same Wi-Fi as the backend, pass the computer's LAN IP as `API_BASE_URL` (for example, `http://192.168.1.20:8000`) when running the mobile app. For a deployed mobile app and website, build both with the same public HTTPS API URL.
+The Android emulator can reach a backend running on the host computer at `http://10.0.2.2:8000`. A physical phone needs the computer's LAN IP, for example `http://192.168.1.20:8000`.
 
-## Build for hosting
+## Run the Flutter app in a browser
 
-Build the static web app with the URL of the deployed backend:
+This runs the Flutter app as a browser app; it does not run the separate React website:
 
 ```powershell
-flutter build web --release --dart-define=API_BASE_URL=https://your-api.example.com
+cd CarbonTracker-Flutter
+flutter pub get
+flutter run -d edge
 ```
 
-Publish the contents of `build/web` to a static web host. For production:
+## Run the React website
 
-- Serve the website and API over HTTPS.
-- Configure the API's CORS allow-list to include the website origin.
-- Add the website domain to Firebase Authentication's authorized domains.
-- Set `API_BASE_URL` to the reachable API base URL when building. The default `127.0.0.1` is only for local development.
+Use the separate `CarbonTracker-Web` folder and its Vite commands. See [the web app README](../CarbonTracker-Web/README.md).
 
-The GPS map/tracking screen also needs the browser's location permission and a valid Google Maps JavaScript API key configured for the web deployment.
+## Build Android
+
+```powershell
+cd CarbonTracker-Flutter
+flutter build apk --release
+```

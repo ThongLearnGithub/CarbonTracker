@@ -1,6 +1,6 @@
 # Carbon Tracker Web
 
-Standalone React + TypeScript web client for Carbon Tracker. This project is separate from `CarbonTracker - Flutter` and reads/writes the same FastAPI service and database used by the mobile app.
+Standalone React + TypeScript web client for Carbon Tracker. This project is separate from the Flutter mobile app in `CarbonTracker-Flutter` and reads/writes the same FastAPI service and database.
 
 ## Requirements
 
