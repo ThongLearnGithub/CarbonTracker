@@ -87,6 +87,7 @@ function App() {
   const [page, setPage] = useState<Page>('Overview')
   const [pendingSignIn, setPendingSignIn] = useState<PendingSignIn | null>(null)
   const [authMessage, setAuthMessage] = useState('')
+  const [authMessageSuccess, setAuthMessageSuccess] = useState(false)
   const [authBusy, setAuthBusy] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -134,6 +135,7 @@ function App() {
   const signIn = async (email: string, password: string) => {
     setAuthBusy(true)
     setAuthMessage('')
+    setAuthMessageSuccess(false)
     try {
       const pending = await signInWithEmail(email, password)
       setPendingSignIn(pending)
@@ -152,6 +154,7 @@ function App() {
   const finishSignIn = async (pending: PendingSignIn) => {
     setAuthBusy(true)
     setAuthMessage('')
+    setAuthMessageSuccess(false)
     try {
       const result = await completeEmailSignIn(pending)
       const nextSession = { apiToken: result.access_token, user: result.user }
@@ -181,11 +184,14 @@ function App() {
   const resetPassword = async (email: string) => {
     setAuthBusy(true)
     setAuthMessage('')
+    setAuthMessageSuccess(false)
     try {
       await requestPasswordReset(email)
-      setAuthMessage('If a Firebase account exists for this email, password reset instructions have been sent. Check your inbox and spam folder.')
+      setAuthMessage('Firebase accepted the password-reset request, but this does not confirm that an email was delivered. Wait a few minutes and check Spam, Promotions, All Mail, and any mail filters. In Firebase Console, confirm this user has the Email/Password provider, review Authentication > Templates > Password reset (sender and action URL), and check Authentication email quotas. Firebase may return success when no password-reset email can be delivered.')
+      setAuthMessageSuccess(true)
     } catch (error) {
       setAuthMessage(messageFor(error))
+      setAuthMessageSuccess(false)
     } finally {
       setAuthBusy(false)
     }
@@ -194,6 +200,7 @@ function App() {
   const register = async (name: string, email: string, password: string) => {
     setAuthBusy(true)
     setAuthMessage('')
+    setAuthMessageSuccess(false)
     try {
       const pending = await createEmailAccount(name, email, password)
       setPendingSignIn(pending)
@@ -247,6 +254,7 @@ function App() {
         mode={authMode}
         busy={authBusy}
         message={authMessage}
+        messageSuccess={authMessageSuccess}
         pending={pendingSignIn}
         onModeChange={setAuthMode}
         onSignIn={(email, password) => void signIn(email, password)}
@@ -338,6 +346,7 @@ function AuthScreen(props: {
   mode: 'login' | 'signup'
   busy: boolean
   message: string
+  messageSuccess: boolean
   pending: PendingSignIn | null
   onModeChange: (mode: 'login' | 'signup') => void
   onSignIn: (email: string, password: string) => void
@@ -390,7 +399,7 @@ function AuthScreen(props: {
             {!signup && <div className="form-meta"><span>Use your mobile app account</span><ShieldCheck size={15} /></div>}
             <button className="primary-button auth-submit" disabled={props.busy}>{props.busy ? <><LoaderCircle className="spin" size={18} /> Please wait…</> : signup ? 'Create account' : 'Sign in'}<ArrowUpRight size={17} /></button>
           </form>
-          {props.message && <div className={`auth-notice ${props.pending && !props.pending.emailVerified ? 'verify-notice' : ''}`} role="status">
+          {props.message && <div className={`auth-notice ${props.messageSuccess ? 'success-notice' : ''} ${props.pending && !props.pending.emailVerified ? 'verify-notice' : ''}`} role="status">
             <span>{props.message}</span>
             {props.pending && !props.pending.emailVerified && <div className="verify-actions"><button onClick={props.onContinue} disabled={props.busy}>{props.busy ? 'Checking…' : 'I verified my email'}</button><button onClick={props.onResend} disabled={props.busy}>Resend verification email</button></div>}
           </div>}
