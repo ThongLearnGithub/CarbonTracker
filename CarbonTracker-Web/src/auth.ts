@@ -50,7 +50,7 @@ function firebaseErrorMessage(code?: string) {
     case 'EMAIL_NOT_FOUND':
     case 'INVALID_LOGIN_CREDENTIALS':
     case 'INVALID_PASSWORD':
-      return 'Email or password is incorrect.'
+      return 'Firebase could not sign in with those details. Check the exact email used in the mobile app or use “Forgot password?”. If this account was created before Firebase sign-in was added, create a Firebase account with the same email to link it to your app data.'
     case 'EMAIL_EXISTS':
       return 'An account already exists for this email. Sign in instead.'
     case 'INVALID_EMAIL':
@@ -64,6 +64,8 @@ function firebaseErrorMessage(code?: string) {
     case 'API_KEY_INVALID':
     case 'INVALID_API_KEY':
       return 'Firebase API key is invalid. Check VITE_FIREBASE_API_KEY.'
+    case 'RESET_PASSWORD_EXCEED_LIMIT':
+      return 'Firebase temporarily limited requests. Wait before trying again.'
     case 'USER_DISABLED':
       return 'This account has been disabled. Contact the app administrator.'
     default:
@@ -122,6 +124,13 @@ export async function resendVerificationEmail(idToken: string) {
   await firebasePost<{ email: string }>('accounts:sendOobCode', {
     requestType: 'VERIFY_EMAIL',
     idToken,
+  })
+}
+
+export async function requestPasswordReset(email: string) {
+  await firebasePost<{ email: string }>('accounts:sendOobCode', {
+    requestType: 'PASSWORD_RESET',
+    email,
   })
 }
 

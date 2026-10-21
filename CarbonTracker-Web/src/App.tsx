@@ -30,6 +30,7 @@ import {
 import {
   completeEmailSignIn,
   createEmailAccount,
+  requestPasswordReset,
   resendVerificationEmail,
   signInWithEmail,
   type PendingSignIn,
@@ -177,6 +178,19 @@ function App() {
     }
   }
 
+  const resetPassword = async (email: string) => {
+    setAuthBusy(true)
+    setAuthMessage('')
+    try {
+      await requestPasswordReset(email)
+      setAuthMessage('If a Firebase account exists for this email, password reset instructions have been sent. Check your inbox and spam folder.')
+    } catch (error) {
+      setAuthMessage(messageFor(error))
+    } finally {
+      setAuthBusy(false)
+    }
+  }
+
   const register = async (name: string, email: string, password: string) => {
     setAuthBusy(true)
     setAuthMessage('')
@@ -237,6 +251,7 @@ function App() {
         onModeChange={setAuthMode}
         onSignIn={(email, password) => void signIn(email, password)}
         onSignUp={(name, email, password) => void register(name, email, password)}
+        onPasswordReset={(email) => void resetPassword(email)}
         onResend={() => void resendVerification()}
         onContinue={() => pendingSignIn && void finishSignIn(pendingSignIn)}
       />
@@ -327,6 +342,7 @@ function AuthScreen(props: {
   onModeChange: (mode: 'login' | 'signup') => void
   onSignIn: (email: string, password: string) => void
   onSignUp: (name: string, email: string, password: string) => void
+  onPasswordReset: (email: string) => void
   onResend: () => void
   onContinue: () => void
 }) {
@@ -370,6 +386,7 @@ function AuthScreen(props: {
             <label>Password
               <span className="password-field"><input autoComplete={signup ? 'new-password' : 'current-password'} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={signup ? 'At least 6 characters' : 'Enter your password'} minLength={6} required /><button type="button" onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button></span>
             </label>
+            {!signup && <button className="forgot-password" type="button" disabled={props.busy || !email.trim()} onClick={() => props.onPasswordReset(email.trim())}>Forgot password?</button>}
             {!signup && <div className="form-meta"><span>Use your mobile app account</span><ShieldCheck size={15} /></div>}
             <button className="primary-button auth-submit" disabled={props.busy}>{props.busy ? <><LoaderCircle className="spin" size={18} /> Please wait…</> : signup ? 'Create account' : 'Sign in'}<ArrowUpRight size={17} /></button>
           </form>
