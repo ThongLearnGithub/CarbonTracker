@@ -2,6 +2,11 @@ fastapi
 uvicorn[standard]
 sqlalchemy>=1.4
 psycopg2-binary
+psycopg[binary]
 python-dotenv
 google-auth[requests]>=2.0
+# routing engine (routing/); the offline data pipeline needs routing/pipeline/requirements.txt as well
+numpy>=2.0
+scipy>=1.11
+shapely>=2.0
  

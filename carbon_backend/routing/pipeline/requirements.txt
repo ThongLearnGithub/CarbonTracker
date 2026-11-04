@@ -1,0 +1,5 @@
+# Offline data pipeline (00-05) only, on top of ../../requirements.txt. Versions used to build the current data.
+osmium==4.3.2
+pyproj==3.8.0
+matplotlib==3.11.2
+openpyxl==3.1.5
