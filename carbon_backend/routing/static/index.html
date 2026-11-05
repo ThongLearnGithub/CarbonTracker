@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GreenMove Routing</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root { --surface: #fcfcfb; --plane: #f9f9f7; --ink: #0b0b0b; --ink-2: #52514e; --line: #e6e5e0; --accent: #2a78d6; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --surface: #1a1a19; --plane: #0d0d0d; --ink: #f0efec; --ink-2: #c3c2b7; --line: #383835; --accent: #3987e5; }
+  }
+  :root[data-theme="dark"] { --surface: #1a1a19; --plane: #0d0d0d; --ink: #f0efec; --ink-2: #c3c2b7; --line: #383835; --accent: #3987e5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; color: var(--ink); background: var(--plane); display: flex; height: 100vh; }
+  #panel { width: 460px; max-width: 100%; overflow-y: auto; padding: 16px; background: var(--surface); border-right: 1px solid var(--line); }
+  #map { flex: 1; }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  .hint { color: var(--ink-2); font-size: 12.5px; margin: 0 0 12px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  label { display: flex; flex-direction: column; font-size: 12px; color: var(--ink-2); gap: 3px; }
+  select, input { width: 100%; min-width: 0; font: inherit; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+  .actions { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
+  button, a.btn { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-decoration: none; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: right; padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--ink-2); font-weight: 500; }
+  th:first-child, td:first-child, td.via { text-align: left; }
+  tr.route:hover { background: var(--plane); cursor: pointer; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+  td.via { color: var(--ink-2); font-size: 12px; padding-top: 0; }
+  #status { font-size: 12.5px; color: var(--ink-2); min-height: 18px; margin: 6px 0; }
+  .err { color: #d03b3b; }
+  .coord label { margin-bottom: 6px; }
+  .inp { display: flex; gap: 6px; }
+  .inp button { padding: 4px 10px; flex: none; }
+  #snap { margin: 0 0 8px; }
+  @media (max-width: 760px) { body { flex-direction: column; } #panel { width: 100%; height: 50vh; } #map { height: 50vh; } }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>GreenMove – thử tìm đường</h1>
+  <p class="hint">Click bản đồ: lần 1 = điểm đi, lần 2 = điểm đến (kéo marker để đổi), hoặc dán tọa độ "lat, lon"
+    (ví dụ chép từ Google Maps: chuột phải → bấm dòng tọa độ) rồi Enter. Vùng có đường: LEZ + 1 km.</p>
+  <div class="coord">
+    <label>Điểm đi (lat, lon)<span class="inp"><input id="o_in" placeholder="10.772193, 106.697556"><button data-copy="o_in" title="Chép tọa độ">Chép</button></span></label>
+    <label>Điểm đến (lat, lon)<span class="inp"><input id="d_in" placeholder="10.769369, 106.720865"><button data-copy="d_in" title="Chép tọa độ">Chép</button></span></label>
+    <div id="snap" class="hint"></div>
+  </div>
+  <div class="row">
+    <label>Phương tiện <select id="vehicle"></select></label>
+    <label>Khung giờ <select id="slot"></select></label>
+  </div>
+  <div class="row">
+    <label>Thuật toán <select id="algorithm">
+      <option value="pareto">Pareto (BOA*) – đánh đổi thời gian/CO₂</option>
+      <option value="fastest">Nhanh nhất (Dijkstra)</option>
+      <option value="greenest">Nhanh nhất + Xanh nhất</option>
+      <option value="shortest">Nhanh nhất + Ngắn nhất</option>
+      <option value="yen">Yen K-shortest (theo thời gian)</option>
+      <option value="csp">CSP – ít CO₂ nhất, chậm hơn ≤ ε</option>
+    </select></label>
+    <div class="row" style="margin:0">
+      <label>k <input id="k" type="number" min="1" max="10" value="3"></label>
+      <label>ε (CSP) <input id="eps" type="number" min="0" max="2" step="0.05" value="0.2"></label>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="primary" id="go">Tìm đường</button>
+    <a class="btn" id="gmaps" target="_blank" rel="noopener" style="display:none">Mở cùng 2 điểm trên Google Maps ↗</a>
+  </div>
+  <div id="status"></div>
+  <table id="result" style="display:none">
+    <thead><tr><th>Tuyến</th><th>Phút</th><th>g CO₂</th><th>km</th><th>+phút</th><th>−CO₂</th><th title="Phần quãng đường trùng với tuyến nhanh nhất">Trùng</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+<div id="map"></div>
+<script>
+const COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
+const NAMES = { fastest: "Nhanh nhất", greenest: "Xanh nhất", shortest: "Ngắn nhất", csp: "CSP" };
+const $ = (id) => document.getElementById(id);
+const map = L.map("map").setView([10.778, 106.70], 14);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+let origin = null, dest = null, layers = [];
+
+fetch("lez").then(r => r.json()).then(g => L.geoJSON(g, { style: { color: "#888", weight: 1.5, fill: false, dashArray: "4 4" } }).addTo(map));
+fetch("meta").then(r => r.json()).then(m => {
+  for (const [k, v] of Object.entries(m.vehicles)) $("vehicle").add(new Option(v, k));
+  for (const [k, v] of Object.entries(m.slots)) $("slot").add(new Option(v, k));
+  $("slot").value = "peak";
+  // Optional link parameters: ?o=lat,lon&d=lat,lon&vehicle=..&slot=..&algorithm=..&k=..
+  const q = new URLSearchParams(location.search);
+  for (const id of ["vehicle", "slot", "algorithm", "k"]) if (q.get(id)) $(id).value = q.get(id);
+  if (q.get("o") && q.get("d")) {
+    setPoint("o", parseLatLon(q.get("o")));
+    setPoint("d", parseLatLon(q.get("d")));
+    map.fitBounds(L.latLngBounds([origin.getLatLng(), dest.getLatLng()]).pad(0.3));
+    run();
+  }
+});
+
+const fmt = (ll) => `${ll.lat.toFixed(6)}, ${ll.lng.toFixed(6)}`;
+function parseLatLon(text) {
+  const m = (text || "").match(/(-?\d+(?:\.\d+)?)\s*[,; ]\s*(-?\d+(?:\.\d+)?)/);
+  return m ? L.latLng(+m[1], +m[2]) : null;
+}
+function marker(latlng, text) {
+  const m = L.marker(latlng, { draggable: true, title: text }).addTo(map).bindTooltip(text, { permanent: true, direction: "top", offset: [-15, -12] });
+  m.on("dragend", () => { $(text === "Đi" ? "o_in" : "d_in").value = fmt(m.getLatLng()); run(); });
+  return m;
+}
+function setPoint(which, latlng) {
+  if (which === "o") { if (origin) origin.setLatLng(latlng); else origin = marker(latlng, "Đi"); }
+  else { if (dest) dest.setLatLng(latlng); else dest = marker(latlng, "Đến"); }
+  $(which + "_in").value = fmt(latlng);
+}
+map.on("click", (e) => {
+  if (!origin || (origin && dest)) {
+    if (dest) { map.removeLayer(dest); dest = null; $("d_in").value = ""; }
+    setPoint("o", e.latlng);
+    clearRoutes();
+  } else {
+    setPoint("d", e.latlng);
+    run();
+  }
+});
+for (const which of ["o", "d"]) {
+  $(which + "_in").addEventListener("change", () => {
+    const ll = parseLatLon($(which + "_in").value);
+    if (!ll) { $("status").innerHTML = `<span class="err">Không đọc được tọa độ, cần dạng "10.772193, 106.697556".</span>`; return; }
+    setPoint(which, ll);
+    if (origin && dest) { map.fitBounds(L.latLngBounds([origin.getLatLng(), dest.getLatLng()]).pad(0.3)); run(); }
+    else map.setView(ll, 16);
+  });
+}
+document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+  const v = $(b.dataset.copy).value;
+  if (!v) return;
+  try { await navigator.clipboard.writeText(v); } catch { $(b.dataset.copy).select(); document.execCommand("copy"); }
+  b.textContent = "Đã chép"; setTimeout(() => (b.textContent = "Chép"), 1200);
+}));
+for (const id of ["vehicle", "slot", "algorithm", "k", "eps"]) $(id).addEventListener("change", () => origin && dest && run());
+$("go").addEventListener("click", run);
+
+function clearRoutes() { layers.forEach(l => map.removeLayer(l)); layers = []; $("result").style.display = "none"; }
+
+async function run() {
+  if (!origin || !dest) { $("status").textContent = "Chọn điểm đi và điểm đến trên bản đồ."; return; }
+  const o = origin.getLatLng(), d = dest.getLatLng();
+  const body = { origin: { lat: o.lat, lon: o.lng }, destination: { lat: d.lat, lon: d.lng },
+    vehicle: $("vehicle").value, slot: $("slot").value, algorithm: $("algorithm").value,
+    k: +$("k").value, max_extra_time: +$("eps").value };
+  $("status").textContent = "Đang tính…";
+  const res = await fetch("routes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  clearRoutes();
+  if (!res.ok) { $("status").innerHTML = `<span class="err">${data.detail?.toString() ?? res.statusText}</span>`; return; }
+  // Move the markers to the graph nodes the routes really start/end at; the Google link uses the same points.
+  setPoint("o", L.latLng(data.origin.lat, data.origin.lon));
+  setPoint("d", L.latLng(data.destination.lat, data.destination.lon));
+  $("snap").textContent = `Đã gắn vào giao lộ gần nhất: điểm đi dời ${data.origin.snap_m} m, điểm đến dời ${data.destination.snap_m} m.`;
+  history.replaceState(null, "", `?o=${fmt(origin.getLatLng()).replace(" ", "")}&d=${fmt(dest.getLatLng()).replace(" ", "")}` +
+    `&vehicle=${body.vehicle}&slot=${body.slot}&algorithm=${body.algorithm}&k=${body.k}`);
+  const info = Object.entries(data.info).map(([k, v]) => `${k}: ${v}`).join(" · ");
+  $("status").textContent = `${data.routes.length} tuyến · ${info}`;
+  $("gmaps").href = data.google_maps_url; $("gmaps").style.display = "";
+  const tbody = $("result").querySelector("tbody"); tbody.innerHTML = "";
+  data.routes.slice().reverse().forEach((r, ri) => {
+    const i = data.routes.length - 1 - ri;
+    const line = L.geoJSON(r.geometry, { style: { color: COLORS[i % 8], weight: i === 0 ? 7 : 5, opacity: 0.85 } }).addTo(map);
+    line.bindTooltip(`${label(r.label)}: ${r.time_min.toFixed(1)} phút, ${r.co2_g.toFixed(0)} g CO₂`, { sticky: true });
+    layers.push(line);
+  });
+  data.routes.forEach((r, i) => {
+    const tr = document.createElement("tr"); tr.className = "route";
+    tr.innerHTML = `<td><span class="sw" style="background:${COLORS[i % 8]}"></span>${label(r.label)}</td>
+      <td>${r.time_min.toFixed(1)}</td><td>${r.co2_g.toFixed(0)}</td><td>${r.distance_km.toFixed(2)}</td>
+      <td>${r.extra_time_min > 0 ? "+" : ""}${r.extra_time_min.toFixed(1)}</td><td>${r.co2_saving_pct.toFixed(1)}%</td>
+      <td>${r.shared_with_fastest_pct.toFixed(0)}%</td>`;
+    const via = document.createElement("tr");
+    via.innerHTML = `<td class="via" colspan="7">qua ${r.via.join(" → ") || "–"}</td>`;
+    const lyr = layers[data.routes.length - 1 - i];
+    tr.addEventListener("mouseenter", () => lyr.setStyle({ weight: 10 }).bringToFront());
+    tr.addEventListener("mouseleave", () => lyr.setStyle({ weight: i === 0 ? 7 : 5 }));
+    tbody.append(tr, via);
+  });
+  $("result").style.display = "";
+}
+function label(l) { return NAMES[l] ?? l.replace("pareto_", "Pareto ").replace("yen_", "Yen ").replace("Pareto 1", "Pareto 1 (nhanh nhất)"); }
+</script>
+</body>
+</html>

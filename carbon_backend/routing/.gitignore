@@ -1,0 +1,4 @@
+# Regenerable pipeline outputs not read by the API (rebuild with pipeline/02-04)
+data/osm/
+data/graph/edges.geojson
+data/weights/edge_weights.csv

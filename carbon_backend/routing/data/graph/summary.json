@@ -1,0 +1,62 @@
+{
+  "source": "lez_buffer_1km.osm.pbf",
+  "nodes": 26758,
+  "nodes_in_lez": 9668,
+  "directed_edges": 69784,
+  "traffic_signal_nodes": 870,
+  "highway_types": {
+    "service": 27713,
+    "residential": 15874,
+    "footway": 9376,
+    "tertiary": 5836,
+    "primary": 5382,
+    "secondary": 3593,
+    "primary_link": 667,
+    "trunk": 276,
+    "steps": 214,
+    "pedestrian": 198,
+    "secondary_link": 181,
+    "trunk_link": 160,
+    "path": 126,
+    "tertiary_link": 118,
+    "living_street": 26,
+    "unclassified": 20,
+    "track": 12,
+    "cycleway": 10,
+    "road": 2
+  },
+  "modes": {
+    "motorcycle": {
+      "edges": 53767,
+      "edges_in_lcc": 53222,
+      "nodes": 23796,
+      "nodes_in_lcc": 23398,
+      "lez_nodes_in_lcc": 7758,
+      "km_in_lcc": 2260.9
+    },
+    "car": {
+      "edges": 46676,
+      "edges_in_lcc": 45048,
+      "nodes": 22272,
+      "nodes_in_lcc": 21063,
+      "lez_nodes_in_lcc": 7315,
+      "km_in_lcc": 1978.0
+    },
+    "bicycle": {
+      "edges": 54211,
+      "edges_in_lcc": 53587,
+      "nodes": 23953,
+      "nodes_in_lcc": 23482,
+      "lez_nodes_in_lcc": 7856,
+      "km_in_lcc": 2276.2
+    },
+    "foot": {
+      "edges": 69532,
+      "edges_in_lcc": 69110,
+      "nodes": 26672,
+      "nodes_in_lcc": 26390,
+      "lez_nodes_in_lcc": 9504,
+      "km_in_lcc": 2912.6
+    }
+  }
+}

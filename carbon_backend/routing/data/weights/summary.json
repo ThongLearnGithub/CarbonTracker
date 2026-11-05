@@ -1,0 +1,45 @@
+{
+  "config": "config/weights_model.json",
+  "network_means_lcc": {
+    "motorcycle_petrol/offpeak": {
+      "mean_speed_kmh": 17.4,
+      "mean_co2_g_per_km": 83.0
+    },
+    "motorcycle_petrol/peak": {
+      "mean_speed_kmh": 13.2,
+      "mean_co2_g_per_km": 95.2
+    },
+    "car_petrol/offpeak": {
+      "mean_speed_kmh": 13.2,
+      "mean_co2_g_per_km": 206.0
+    },
+    "car_petrol/peak": {
+      "mean_speed_kmh": 9.2,
+      "mean_co2_g_per_km": 234.9
+    },
+    "motorcycle_electric/offpeak": {
+      "mean_speed_kmh": 17.4,
+      "mean_co2_g_per_km": 16.5
+    },
+    "motorcycle_electric/peak": {
+      "mean_speed_kmh": 13.2,
+      "mean_co2_g_per_km": 16.5
+    },
+    "bicycle/offpeak": {
+      "mean_speed_kmh": 11.4,
+      "mean_co2_g_per_km": 0.0
+    },
+    "bicycle/peak": {
+      "mean_speed_kmh": 10.1,
+      "mean_co2_g_per_km": 0.0
+    },
+    "foot/offpeak": {
+      "mean_speed_kmh": 4.8,
+      "mean_co2_g_per_km": 0.0
+    },
+    "foot/peak": {
+      "mean_speed_kmh": 4.8,
+      "mean_co2_g_per_km": 0.0
+    }
+  }
+}

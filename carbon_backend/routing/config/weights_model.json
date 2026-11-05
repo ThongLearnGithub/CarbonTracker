@@ -1,0 +1,84 @@
+{
+  "_about": "Edge weight model (time t, CO2 c) used by scripts/04_edge_weights.py. Speeds, peak factors and signal delays are ASSUMPTIONS to be calibrated against Google Maps (data/validation). Energy curves come from EMEP/EEA.",
+
+  "slots": {
+    "offpeak": {"label": "Thấp điểm 10:00-15:00", "depart": "10:30"},
+    "peak":    {"label": "Cao điểm 17:00-19:00",  "depart": "17:30"}
+  },
+  "_peak_hours_about": "API: a departure time inside one of these windows uses the 'peak' weights, otherwise 'offpeak'.",
+  "peak_hours": [["07:00", "09:00"], ["16:30", "19:00"]],
+
+  "profiles": {
+    "motorcycle_petrol": {
+      "label": "Xe máy xăng (4 thì <250 cc, Euro 2 = mức 2 VN)",
+      "graph_mode": "motorcycle", "speed_class": "motorcycle",
+      "energy": {
+        "type": "copert",
+        "source": "EMEP/EEA Guidebook 2023 (v2026), 1.A.3.b.i-iv Appendix 4, HOT_EMISSIONS_PARAMETERS: L-Category / Petrol / Motorcycles 4-stroke <250 cm3 / Euro 2 / EC",
+        "alpha": 0.000875594087133633, "beta": 0.00495744662961106, "gamma": 3.48663587044785,
+        "delta": -16.9869021694623, "epsilon": -0.000571100057676655, "zita": 0.173075507667523,
+        "hta": -0.474584416356652, "reduction_factor": 0, "v_min": 10, "v_max": 100,
+        "co2_g_per_mj": 69.3,
+        "co2_source": "IPCC 2006 Guidelines Vol.2 Table 3.2.1, motor gasoline 69 300 kg CO2/TJ"
+      }
+    },
+    "car_petrol": {
+      "label": "Ô tô xăng hạng nhỏ (Small, Euro 5 PFI = mức 5 VN)",
+      "graph_mode": "car", "speed_class": "car",
+      "energy": {
+        "type": "copert",
+        "source": "EMEP/EEA Guidebook 2023 (v2026), 1.A.3.b.i-iv Appendix 4, HOT_EMISSIONS_PARAMETERS: Passenger Cars / Petrol / Small / Euro 5 / PFI / EC",
+        "alpha": 0.00479738739563609, "beta": -0.253329624090869, "gamma": 20.9516093226689,
+        "delta": 2.54117379920738e-13, "epsilon": 0.000800882509437353, "zita": 0.0913287072165368,
+        "hta": 3.51264258525147, "reduction_factor": 0.19386332306312268, "v_min": 5, "v_max": 130,
+        "co2_g_per_mj": 69.3,
+        "co2_source": "IPCC 2006 Guidelines Vol.2 Table 3.2.1, motor gasoline 69 300 kg CO2/TJ"
+      }
+    },
+    "motorcycle_electric": {
+      "label": "Xe máy điện",
+      "graph_mode": "motorcycle", "speed_class": "motorcycle",
+      "energy": {
+        "type": "electric",
+        "wh_per_km": 25,
+        "wh_source": "ASSUMPTION: ~17 Wh/km from a 3.5 kWh / ~200 km scooter spec, +30% real-world, +15% charging loss. Verify.",
+        "grid_kg_co2_per_kwh": 0.6592,
+        "grid_source": "Vietnam grid emission factor 2023 (Cục Biến đổi khí hậu, Bộ TN&MT). Check for a newer official value."
+      }
+    },
+    "bicycle": {"label": "Xe đạp", "graph_mode": "bicycle", "speed_class": "bicycle", "energy": null},
+    "foot":    {"label": "Đi bộ",  "graph_mode": "foot",    "speed_class": "foot",    "energy": null}
+  },
+
+  "_speeds_about": "Off-peak running speed (km/h) per highway class, i.e. typical HCMC inner-city speed outside rush hour, NOT free-flow. Capped by OSM maxspeed when tagged. Peak speed = off-peak x peak_factor.",
+  "speeds_kmh": {
+    "motorcycle": {
+      "trunk": 40, "trunk_link": 30, "primary": 30, "primary_link": 25, "secondary": 27, "secondary_link": 22,
+      "tertiary": 24, "tertiary_link": 20, "unclassified": 20, "residential": 20, "road": 20,
+      "living_street": 12, "service": 15, "track": 10, "default": 10
+    },
+    "car": {
+      "trunk": 40, "trunk_link": 30, "primary": 28, "primary_link": 22, "secondary": 24, "secondary_link": 20,
+      "tertiary": 21, "tertiary_link": 18, "unclassified": 18, "residential": 16, "road": 16,
+      "living_street": 10, "service": 10, "track": 8, "default": 8
+    },
+    "bicycle": {"default": 13, "service": 11, "living_street": 10, "residential": 12, "steps": 2},
+    "foot":    {"default": 4.8, "steps": 2.0}
+  },
+
+  "major_roads": ["trunk", "trunk_link", "primary", "primary_link", "secondary", "secondary_link", "tertiary", "tertiary_link"],
+  "peak_factor": {
+    "motorcycle": {"major": 0.65, "minor": 0.80},
+    "car":        {"major": 0.55, "minor": 0.75},
+    "bicycle":    {"major": 0.90, "minor": 0.90},
+    "foot":       {"major": 1.00, "minor": 1.00}
+  },
+
+  "_signal_about": "Mean waiting time (s) added per traffic-signal node passed on an edge.",
+  "signal_delay_s": {
+    "motorcycle": {"offpeak": 15, "peak": 30},
+    "car":        {"offpeak": 15, "peak": 35},
+    "bicycle":    {"offpeak": 15, "peak": 25},
+    "foot":       {"offpeak": 10, "peak": 10}
+  }
+}
