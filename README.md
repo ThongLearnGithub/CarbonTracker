@@ -8,8 +8,7 @@ Carbon Tracker is a multi-platform carbon-footprint tracker. The repository keep
 CarbonTracker/
 ├── CarbonTracker-Flutter/   # Android/iOS app and Flutter Web client
 ├── carbon_backend/          # FastAPI REST API and database integration
-└── CarbonTracker-Web/       # Standalone React + TypeScript web client
-```
+│   └── routing/             # low-carbon routing engine (API under /routing, see 
 
 ## Shared account and data
 
@@ -17,15 +16,23 @@ Both clients use the FastAPI backend in `carbon_backend`. To see the same trips,
 
 ## Start the backend
 
-Create and configure `carbon_backend/.env` for your local database and Firebase project. This file is intentionally excluded from Git. Install backend requirements in a local virtual environment, then run:
+Copy `carbon_backend/.env.example` to `carbon_backend/.env` and set your local database URL and Firebase project. `.env` is intentionally excluded from Git. Install backend requirements in a local virtual environment, apply the database migrations, then run:
 
 ```powershell
 cd carbon_backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+alembic upgrade head              # create or update the database schema
+python -m scripts.seed            # optional: demo users, vouchers and trips (password "123")
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+Run the backend tests with `pytest` (they use an in-memory SQLite database). After pulling a change that adds a file under `carbon_backend/alembic/versions/`, run `alembic upgrade head` again.
+
+All user-specific endpoints (`/homepage`, `/trips`, `/wallet`, voucher redemption) identify the user from the `Authorization: Bearer <access_token>` header returned by `/auth/firebase` or `/auth/login`. Tokens expire after 7 days (`ACCESS_TOKEN_TTL_DAYS`).
+
+The routing engine loads its road graph at start-up (about 2 seconds). Its test map is at `http://127.0.0.1:8000/routing/map`.
 
 ## Run the standalone React web app
 
@@ -64,4 +71,4 @@ For a phone connected over Wi-Fi, configure the API URL to use the computer's LA
 
 ## Security before deployment
 
-The backend currently has routes that accept a `user_id` without enforcing the bearer token on every endpoint. Add and verify backend authorization before making the API public. Configure production CORS to allow only the deployed web origin, use HTTPS, and keep database credentials, `.env` files, and service-account private keys out of Git.
+Configure production CORS to allow only the deployed web origin (`CORS_ORIGINS`, and set `CORS_ORIGIN_REGEX=` to drop the localhost default), use HTTPS, and keep database credentials, `.env` files, and service-account private keys out of Git.
