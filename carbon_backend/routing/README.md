@@ -1,13 +1,14 @@
 # Routing Engine – study area (LEZ)
 
 Low-carbon route recommendation for GreenMove, as a module of `carbon_backend`. The API runs inside the
-backend (`../routing_routes.py`, prefix `/routing`); `pipeline/` builds the data offline from the Vietnam
+backend (`../app/api/routes/routing.py`, prefix `/routing`); `pipeline/` builds the data offline from the Vietnam
 OpenStreetMap extract.
 
 ```text
 carbon_backend/
-├── main.py                 # include_router(routing_router); loads the graph at start-up
-├── routing_routes.py       # HTTP endpoints /routing/...
+├── app/main.py             # lifespan builds the RoutingEngine once (app.state.routing_engine)
+├── app/api/routes/routing.py  # HTTP endpoints /routing/...
+├── app/schemas/routing.py  # request/response models
 └── routing/
     ├── model.py            # weight model (speed -> time, speed -> CO2)
     ├── algorithms.py       # Dijkstra/A*, Yen, LARAC, BOA*
@@ -175,12 +176,12 @@ Every 4th pair (10 pairs, `test`) is held out: it is not used to fit the speeds,
 | `data/validation/od_pairs.csv` | pairs with model minutes, km and CO₂ per slot |
 | `data/validation/model_routes.geojson` | model routes (QGIS; filter by `id`, `slot`) |
 
-## Routing API (`../routing_routes.py`)
+## Routing API (`../app/api/routes/routing.py`)
 
 Part of the backend; start it as usual from `carbon_backend`:
 
 ```powershell
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 - http://127.0.0.1:8000/routing/map – test map: click origin and destination, pick vehicle / time slot / algorithm,

@@ -3,7 +3,7 @@ from datetime import datetime
 from math import atan2, cos, radians, sin, sqrt
 from typing import Iterable, Optional
 
-from models import GpsRoutePoint
+from app.schemas.trip import GpsRoutePoint
 
 MAX_GPS_ACCURACY_METERS = 25.0
 MAX_GPS_GAP_SECONDS = 30.0

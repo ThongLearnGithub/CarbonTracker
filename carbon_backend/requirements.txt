@@ -1,12 +1,19 @@
-fastapi
-uvicorn[standard]
-sqlalchemy>=1.4
-psycopg2-binary
-psycopg[binary]
-python-dotenv
-google-auth[requests]>=2.0
-# routing engine (routing/); the offline data pipeline needs routing/pipeline/requirements.txt as well
-numpy>=2.0
-scipy>=1.11
-shapely>=2.0
- 
+# Everything the backend needs: API, routing engine and tests. Routing data pipeline (rarely needed): routing/pipeline/requirements.txt.
+fastapi==0.159.1
+uvicorn[standard]==0.54.0
+pydantic-settings==2.16.2
+email-validator==2.3.0
+sqlalchemy==2.1.6
+alembic==1.20.1
+psycopg[binary]==3.3.6
+pwdlib[argon2]==0.3.1
+google-auth[requests]==2.62.0
+
+# routing engine (routing/)
+numpy==2.5.4
+scipy==1.18.1
+shapely==2.2.0
+
+# tests (pytest)
+pytest==9.2.0
+httpx==0.28.1
